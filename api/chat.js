@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
     if (!question) return res.status(400).json({ error: 'message is required' });
 
     const guide = readGuideKnowledge();
-    const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+    const model = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
     const system = `You are MADE STAY 301's guest-guide concierge chatbot. Answer in the user's language, default Korean.
 
 Use the provided GUIDE_KNOWLEDGE as the primary source of truth. If the answer is clearly in GUIDE_KNOWLEDGE, answer directly and concisely.

@@ -1,1 +1,11 @@
-{"cleanUrls":true,"trailingSlash":false}
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/guide-woody-v2",
+      "permanent": false
+    }
+  ]
+}

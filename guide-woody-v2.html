@@ -40,6 +40,9 @@ body{background:var(--bg);color:var(--ink)}
 .tab{border-radius:14px;color:var(--secondary)}
 .chat-head,.chat-form{background:var(--card)}
 .msg.bot{background:var(--card)}
+.msg strong{font-weight:800}
+.msg code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:rgba(0,0,0,.06);border-radius:5px;padding:1px 4px}
+.msg.user code{background:rgba(255,255,255,.18)}
 .toast{background:var(--ink);color:#fff}
 
   </style>
@@ -102,7 +105,10 @@ body{background:var(--bg);color:var(--ink)}
     ['openChatFab','openChatTop','openChatCard'].forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('click',openChat)});
     document.getElementById('closeChat').addEventListener('click',closeChat); chatBackdrop.addEventListener('click',closeChat);
     document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.textContent; chatForm.requestSubmit()}));
-    function addMsg(role,text,extra=''){const div=document.createElement('div');div.className='msg '+(role==='user'?'user':'bot')+(extra?' '+extra:'');div.textContent=text;chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;return div}
+    function escapeHtml(text){return String(text).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+    function renderBotText(text){return escapeHtml(text).replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n][^*]*?)\*\*/g,'<strong>$1</strong>')}
+    function setMsgText(div,role,text){if(role==='user'){div.textContent=text;return}div.innerHTML=renderBotText(text)}
+    function addMsg(role,text,extra=''){const div=document.createElement('div');div.className='msg '+(role==='user'?'user':'bot')+(extra?' '+extra:'');setMsgText(div,role,text);chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;return div}
     function getLocalAnswer(q){
       const hit=guideAnswers.find(([keys])=>keys.some(k=>q.toLowerCase().includes(String(k).toLowerCase())));
       return hit?hit[1]:'와이파이, 텔레비전, 난방·온수, 공기청정기·에어컨, 세탁기, 인덕션, 쓰레기 배출 방법을 확인할 수 있습니다. 예약이나 긴급 상황은 호스트에게 확인해 주세요.';
@@ -122,12 +128,12 @@ body{background:var(--bg);color:var(--ink)}
         if(!res.ok) throw new Error(`chat api ${res.status}`);
         const data=await res.json();
         const answer=data.answer||getLocalAnswer(q);
-        botDiv.textContent=answer;
+        setMsgText(botDiv,'bot',answer);
         botDiv.classList.remove('typing');
         chatHistory.push({role:'assistant',content:answer});
       }catch{
         const answer=getLocalAnswer(q);
-        botDiv.textContent=answer;
+        setMsgText(botDiv,'bot',answer);
         botDiv.classList.remove('typing');
         chatHistory.push({role:'assistant',content:answer});
       }

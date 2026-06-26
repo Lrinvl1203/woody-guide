@@ -103,6 +103,10 @@ body{background:var(--bg);color:var(--ink)}
     document.getElementById('closeChat').addEventListener('click',closeChat); chatBackdrop.addEventListener('click',closeChat);
     document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.textContent; chatForm.requestSubmit()}));
     function addMsg(role,text,extra=''){const div=document.createElement('div');div.className='msg '+(role==='user'?'user':'bot')+(extra?' '+extra:'');div.textContent=text;chatLog.appendChild(div);chatLog.scrollTop=chatLog.scrollHeight;return div}
+    function getLocalAnswer(q){
+      const hit=guideAnswers.find(([keys])=>keys.some(k=>q.toLowerCase().includes(String(k).toLowerCase())));
+      return hit?hit[1]:'와이파이, 텔레비전, 난방·온수, 공기청정기·에어컨, 세탁기, 인덕션, 쓰레기 배출 방법을 확인할 수 있습니다. 예약이나 긴급 상황은 호스트에게 확인해 주세요.';
+    }
     let chatHistory=[];
     chatForm.addEventListener('submit',async e=>{
       e.preventDefault();
@@ -115,15 +119,17 @@ body{background:var(--bg);color:var(--ink)}
       chatLog.scrollTop=chatLog.scrollHeight;
       try{
         const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,history:chatHistory.slice(-6)})});
+        if(!res.ok) throw new Error(`chat api ${res.status}`);
         const data=await res.json();
-        const answer=data.answer||'죄송합니다. 다시 시도해 주세요.';
+        const answer=data.answer||getLocalAnswer(q);
         botDiv.textContent=answer;
         botDiv.classList.remove('typing');
         chatHistory.push({role:'assistant',content:answer});
       }catch{
-        botDiv.textContent='연결 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+        const answer=getLocalAnswer(q);
+        botDiv.textContent=answer;
         botDiv.classList.remove('typing');
-        chatHistory.pop();
+        chatHistory.push({role:'assistant',content:answer});
       }
       chatLog.scrollTop=chatLog.scrollHeight;
     });

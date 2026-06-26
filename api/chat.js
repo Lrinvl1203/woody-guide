@@ -25,6 +25,65 @@ function extractText(output) {
   return parts.join('\n').trim();
 }
 
+const LOCAL_ANSWERS = [
+  {
+    keys: ['wifi', 'wi-fi', 'password', '와이파이', '비밀번호'],
+    ko: '와이파이 이름은 U+NetAC4F, 비밀번호는 32F7006823 입니다. 숙소 와이파이 화면에서도 바로 확인하실 수 있습니다.',
+    en: 'The Wi-Fi name is U+NetAC4F and the password is 32F7006823. You can also check it on the Wi-Fi section of this guide.'
+  },
+  {
+    keys: ['tv', 'television', 'netflix', 'youtube', '티비', '텔레비전', '넷플릭스', '유튜브'],
+    ko: '일반 텔레비전은 전원 버튼을 누르시면 됩니다. 넷플릭스와 유튜브는 리모컨의 해당 버튼을 누르세요. 일반 TV로 돌아가려면 외부입력을 HDMI 1로 맞춰 주세요.',
+    en: 'For regular TV, press the power button. For Netflix or YouTube, use the dedicated remote buttons. To return to regular TV, set the input to HDMI 1.'
+  },
+  {
+    keys: ['boiler', 'heating', 'hot water', '난방', '온수', '보일러'],
+    ko: '난방과 온수는 보일러 전원 버튼으로 켭니다. 온수만 사용하려면 난방/외출 버튼을 두 번 눌러 주세요. 화면 왼쪽은 난방 온도, 오른쪽은 온수 온도입니다.',
+    en: 'Turn on the boiler power for heating and hot water. For hot water only, press the heating/away button twice. The left side of the screen is heating temperature, and the right side is hot-water temperature.'
+  },
+  {
+    keys: ['air conditioner', 'aircon', 'air purifier', 'ac', '에어컨', '공기청정기'],
+    ko: '공기청정기는 전원과 바람 세기 버튼을 사용합니다. 에어컨은 전원, 온도, 바람 세기 버튼으로 조절하시면 됩니다.',
+    en: 'Use the power and fan-speed buttons for the air purifier. For the air conditioner, adjust power, temperature, and fan speed with the remote.'
+  },
+  {
+    keys: ['washer', 'washing', 'laundry', 'detergent', '세탁', '세탁기', '세제', '빨래'],
+    ko: '세탁기는 전원을 켠 뒤 코스를 선택하고 시작/일시정지를 누르세요. 세제는 싱크대 아래에 있습니다. 수건 세탁 시에는 섬유유연제를 넣지 말아 주세요.',
+    en: 'Turn on the washer, choose a course, then press start/pause. Detergent is under the sink. Please do not use fabric softener when washing towels.'
+  },
+  {
+    keys: ['induction', 'stove', 'cooktop', '인덕션'],
+    ko: '인덕션은 전원을 켠 뒤 잠겨 있으면 잠금/해제 버튼을 누르고, 화력 버튼으로 세기를 조절하세요.',
+    en: 'Turn on the induction cooktop. If it is locked, press the lock/unlock button first, then adjust the heat level.'
+  },
+  {
+    keys: ['trash', 'garbage', 'recycling', 'food waste', '쓰레기', '재활용', '음식물'],
+    ko: '일반 쓰레기는 분홍색 또는 흰색 봉투, 음식물 쓰레기는 노란색 봉투와 전용 용기를 사용해 주세요. 재활용은 지하 2층 분리수거장을 이용하시면 됩니다.',
+    en: 'For general trash, use the pink or white bags. For food waste, use the yellow bag and dedicated container. Recycling should be taken to the B2 recycling area.'
+  }
+];
+
+function localAnswer(question) {
+  const q = String(question || '').toLowerCase();
+  const isEnglish = /[a-z]/i.test(q) && !/[가-힣]/.test(q);
+  const hit = LOCAL_ANSWERS.find(item => item.keys.some(key => q.includes(key.toLowerCase())));
+  if (hit) return isEnglish ? hit.en : hit.ko;
+  return isEnglish
+    ? 'I can help with Wi-Fi, TV, heating and hot water, air conditioner, washer, induction cooktop, and trash or recycling. For booking, door lock, or urgent issues, please contact the host directly.'
+    : '와이파이, 텔레비전, 난방·온수, 에어컨, 세탁기, 인덕션, 쓰레기 배출 방법을 확인할 수 있습니다. 예약, 도어락, 긴급 상황은 호스트에게 직접 확인해 주세요.';
+}
+
+function parseBody(req) {
+  if (typeof req.body === 'string') {
+    try {
+      return JSON.parse(req.body || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+  return req.body || {};
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,14 +93,16 @@ module.exports = async function handler(req, res) {
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({
+    const body = parseBody(req);
+    return res.status(200).json({
       error: 'OPENAI_API_KEY is not configured on the server.',
-      answer: 'AI 챗봇 서버 환경변수 OPENAI_API_KEY가 아직 설정되지 않았습니다. Vercel 프로젝트 환경변수에 OpenAI API 키를 추가한 뒤 다시 배포하면 작동합니다.'
+      fallback: true,
+      answer: localAnswer(body.message)
     });
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const body = parseBody(req);
     const question = String(body.message || '').trim().slice(0, 1200);
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
     if (!question) return res.status(400).json({ error: 'message is required' });
@@ -129,15 +190,21 @@ Format for mobile: short paragraphs, bullet points, clear action steps.`;
 
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({
+      return res.status(200).json({
         error: data?.error?.message || 'OpenAI API error',
-        detail: data
+        detail: data,
+        fallback: true,
+        answer: localAnswer(question)
       });
     }
 
     const answer = extractText(data) || '죄송합니다. 답변을 생성하지 못했습니다. 호스트에게 확인해 주세요.';
     return res.status(200).json({ answer, model, searched: JSON.stringify(data).includes('web_search') });
   } catch (err) {
-    return res.status(500).json({ error: err.message || String(err) });
+    return res.status(200).json({
+      error: err.message || String(err),
+      fallback: true,
+      answer: localAnswer(parseBody(req).message)
+    });
   }
 };

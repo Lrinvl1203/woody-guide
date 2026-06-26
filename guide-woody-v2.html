@@ -22,6 +22,9 @@
 
 /* Woody.design.md V2 token overrides: warm walnut text, linen background, toasted-oak accent, tactile rounded cards. */
 body{background:var(--bg);color:var(--ink)}
+.top{display:grid;grid-template-columns:88px 1fr 88px;align-items:center}
+.top h1{text-align:center;white-space:nowrap;font-size:clamp(20px,6vw,24px);line-height:1.1}
+.top-actions{display:flex;justify-content:flex-end;gap:0}
 .top{background:rgba(248,243,235,.94);border-bottom-color:rgba(216,198,180,.7)}
 .card,.device,.contact-card{background:var(--card);border-color:rgba(216,198,180,.78);border-radius:22px;box-shadow:var(--shadow)}
 .card{padding:24px}
@@ -57,7 +60,7 @@ body{background:var(--bg);color:var(--ink)}
 </head>
 <body>
   <div class="app">
-    <header class="top"><button class="icon-btn" aria-label="메뉴"><span class="mi">menu</span></button><h1>우디하우스</h1><button class="icon-btn" aria-label="안내 도우미" id="openChatTop"><span class="mi">smart_toy</span></button></header>
+    <header class="top"><button class="icon-btn" aria-label="메뉴"><span class="mi">menu</span></button><h1>우디하우스</h1><div class="top-actions"><a class="icon-btn" href="assets/guidebook/Woody_House_Guidebook.pdf" target="_blank" rel="noopener" aria-label="가이드북 열기" id="openGuidebookTop"><span class="mi">menu_book</span></a><button class="icon-btn" aria-label="안내 도우미" id="openChatTop"><span class="mi">smart_toy</span></button></div></header>
 
     <main>
       <section class="screen active" data-screen="home">

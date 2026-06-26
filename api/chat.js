@@ -95,7 +95,6 @@ module.exports = async function handler(req, res) {
   if (!apiKey) {
     const body = parseBody(req);
     return res.status(200).json({
-      error: 'OPENAI_API_KEY is not configured on the server.',
       fallback: true,
       answer: localAnswer(body.message)
     });
@@ -190,9 +189,8 @@ Format for mobile: short paragraphs, bullet points, clear action steps.`;
 
     const data = await response.json();
     if (!response.ok) {
+      console.warn('OpenAI API fallback:', response.status, data?.error?.code || data?.error?.message || 'unknown');
       return res.status(200).json({
-        error: data?.error?.message || 'OpenAI API error',
-        detail: data,
         fallback: true,
         answer: localAnswer(question)
       });
@@ -201,8 +199,8 @@ Format for mobile: short paragraphs, bullet points, clear action steps.`;
     const answer = extractText(data) || '죄송합니다. 답변을 생성하지 못했습니다. 호스트에게 확인해 주세요.';
     return res.status(200).json({ answer, model, searched: JSON.stringify(data).includes('web_search') });
   } catch (err) {
+    console.warn('Chat API fallback:', err.message || String(err));
     return res.status(200).json({
-      error: err.message || String(err),
       fallback: true,
       answer: localAnswer(parseBody(req).message)
     });
